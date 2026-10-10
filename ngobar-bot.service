@@ -1,0 +1,17 @@
+[Unit]
+Description=Telegram Bot Server Ngobar (Modular RBAC)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/server-bot
+ExecStart=/usr/bin/python3 /root/server-bot/bot.py
+Restart=always
+RestartSec=5
+EnvironmentFile=/root/server-bot/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

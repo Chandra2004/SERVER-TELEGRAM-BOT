@@ -1,0 +1,39 @@
+# Environment & Secrets
+.env
+*.env
+.env.local
+.env.*.local
+
+# Database & SQLite files
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.sqlite*
+*.sqlite*
+*.db
+
+# Internal Agent & IDE Customization rules (Hidden from GitHub)
+AGENTS.md
+.agents/
+.gemini/
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+
+# Logs
+*.log
+logs/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# IDE specific files
+.idea/
+.vscode/
