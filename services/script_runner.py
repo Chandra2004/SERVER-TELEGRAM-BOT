@@ -26,18 +26,19 @@ def execute_server_script(command_name: str) -> Tuple[bool, str]:
             success = True
         else:
             try:
+                TIMEOUT_SECONDS = 180
                 res = subprocess.run(
                     ["bash", "-c", code],
                     capture_output=True,
                     text=True,
-                    timeout=30
+                    timeout=TIMEOUT_SECONDS
                 )
                 success = (res.returncode == 0)
                 output = res.stdout if res.stdout else res.stderr
                 if not output:
                     output = "Perintah selesai tanpa output (Exit Code 0)."
             except subprocess.TimeoutExpired:
-                return False, "Error: Eksekusi script melebihi batas waktu (Timeout 30 detik)."
+                return False, f"Error: Eksekusi script melebihi batas waktu (Timeout {TIMEOUT_SECONDS} detik)."
             except Exception as e:
                 return False, f"Error eksekusi: {str(e)}"
 
@@ -47,7 +48,8 @@ def execute_server_script(command_name: str) -> Tuple[bool, str]:
             output = f"[DEV-MODE WINDOWS]\nSSH ke Multiverse disimulasikan:\n$ {code}\n\nOutput: [Simulated Success]"
             success = True
         else:
-            success, output = run_ssh_multiverse(code, timeout=30)
+            TIMEOUT_SECONDS = 180
+            success, output = run_ssh_multiverse(code, timeout=TIMEOUT_SECONDS)
 
     else:
         return False, f"Target server `{target}` tidak dikenali."
