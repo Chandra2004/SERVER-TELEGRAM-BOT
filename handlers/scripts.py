@@ -136,8 +136,42 @@ def register_script_handlers(bot: TeleBot):
 
         log_audit(user_id, cmd_text, f"ALLOWED_server:scripts_RUN_{cmd_candidate}")
         bot.send_chat_action(message.chat.id, "typing")
-        _, laporan = execute_server_script(cmd_candidate)
+        init_card = (
+            "```text\n"
+            "========================================\n"
+            f" SCRIPT: {cmd_candidate.upper()}\n"
+            " STATUS: MEMULAI EKSEKUSI (LIVE WATCH)\n"
+            "========================================\n\n"
+            "Memulai proses eksekusi script...\n"
+            "```"
+        )
         try:
-            bot.reply_to(message, laporan, parse_mode="Markdown")
+            status_msg = bot.reply_to(message, init_card, parse_mode="Markdown")
         except Exception:
-            bot.reply_to(message, laporan)
+            status_msg = bot.reply_to(message, init_card)
+
+        def update_progress(preview_text: str):
+            try:
+                bot.edit_message_text(
+                    preview_text,
+                    chat_id=status_msg.chat.id,
+                    message_id=status_msg.message_id,
+                    parse_mode="Markdown"
+                )
+            except Exception:
+                pass
+
+        _, laporan = execute_server_script(cmd_candidate, on_progress=update_progress)
+        try:
+            bot.edit_message_text(
+                laporan,
+                chat_id=status_msg.chat.id,
+                message_id=status_msg.message_id,
+                parse_mode="Markdown"
+            )
+        except Exception:
+            bot.edit_message_text(
+                laporan,
+                chat_id=status_msg.chat.id,
+                message_id=status_msg.message_id
+            )

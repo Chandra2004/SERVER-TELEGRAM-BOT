@@ -112,23 +112,47 @@ def register_menu_handlers(bot: TeleBot):
                 bot.answer_callback_query(call.id, "Akses ditolak!", show_alert=True)
                 return
             cmd_name = action.split(":")[1]
+            chat_id = call.message.chat.id
+            message_id = call.message.message_id
             bot.answer_callback_query(call.id, f"Mengeksekusi /{cmd_name}...")
-            _, laporan = execute_server_script(cmd_name)
+
+            # Pesan awal live watch mode
+            init_msg = (
+                "```text\n"
+                "========================================\n"
+                f" SCRIPT: {cmd_name.upper()}\n"
+                " STATUS: MEMULAI EKSEKUSI (LIVE WATCH)\n"
+                "========================================\n\n"
+                "Memulai proses eksekusi script...\n"
+                "```"
+            )
+            try:
+                bot.edit_message_text(init_msg, chat_id=chat_id, message_id=message_id, parse_mode="Markdown")
+            except Exception:
+                pass
+
+            def update_progress(preview_text: str):
+                try:
+                    bot.edit_message_text(preview_text, chat_id=chat_id, message_id=message_id, parse_mode="Markdown")
+                except Exception:
+                    pass
+
+            _, laporan = execute_server_script(cmd_name, on_progress=update_progress)
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton("🔙 Kembali ke Daftar Script", callback_data="menu:scripts"))
             try:
                 bot.edit_message_text(
                     laporan,
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.message_id,
+                    chat_id=chat_id,
+                    message_id=message_id,
                     parse_mode="Markdown",
                     reply_markup=markup
                 )
             except Exception:
                 bot.edit_message_text(
                     laporan,
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.message_id,
+                    chat_id=chat_id,
+                    message_id=message_id,
                     reply_markup=markup
                 )
 
