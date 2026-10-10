@@ -37,3 +37,25 @@ def register_common_handlers(bot: TeleBot):
         sync_user_command_menu(bot, message.from_user.id)
         laporan = get_server_health_report()
         bot.reply_to(message, laporan, parse_mode="Markdown")
+
+    @bot.message_handler(commands=['test_alert'])
+    @can('server:metrics')
+    def handle_test_alert(message: Message):
+        """Uji simulasi format notifikasi darurat memori 90%"""
+        from services.alert_service import _send_alert_to_all
+        import time
+        waktu = time.strftime("%Y-%m-%d %H:%M:%S WIB")
+        sample_msg = (
+            "🚨 *[SIMULASI PERINGATAN KRITIS] MEMORI SERVER >= 90%*\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            f"🕒 *Waktu:* `{waktu}`\n"
+            "🖥️ *Server:* `Galaxy (Web & App)` (`server.ngopibareng.id`)\n"
+            "📊 *Penggunaan RAM:* `92.4%` (3.6G / 3.9G (92%))\n"
+            "⚠️ *Status:* Ambang batas 90% terlampaui!\n\n"
+            "💡 *Rekomendasi Tindakan:*\n"
+            "• Jalankan `/hapus_sampah_galaxy` untuk flush RAM & cache.\n"
+            "• Cek kondisi via `/ping`.\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "_(Pesan ini adalah simulasi pengujian notifikasi otomatis)_"
+        )
+        _send_alert_to_all(bot, sample_msg)

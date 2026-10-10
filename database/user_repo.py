@@ -112,6 +112,25 @@ def list_all_users() -> List[Dict[str, Any]]:
         """)
         return [dict(row) for row in cursor.fetchall()]
 
+def get_alert_recipients() -> List[int]:
+    """Mengambil ID Telegram semua admin/superadmin yang berhak menerima notifikasi kritis"""
+    recipients = {SUPERADMIN_ID}
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT DISTINCT u.id
+                FROM users u
+                JOIN user_roles ur ON u.id = ur.user_id
+                JOIN roles r ON ur.role_id = r.id
+                WHERE r.name IN ('superadmin', 'admin')
+            """)
+            for row in cursor.fetchall():
+                recipients.add(row["id"])
+    except Exception:
+        pass
+    return list(recipients)
+
 # ==========================================
 # 3. CRUD ROLES & PERMISSIONS
 # ==========================================

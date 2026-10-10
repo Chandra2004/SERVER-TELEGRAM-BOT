@@ -7,6 +7,7 @@ from handlers.common import register_common_handlers
 from handlers.admin import register_admin_handlers
 from handlers.menu import register_menu_handlers
 from handlers.scripts import register_script_handlers
+from services.alert_service import start_alert_monitor
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,6 +37,9 @@ def create_bot() -> telebot.TeleBot:
     register_common_handlers(bot)
     register_admin_handlers(bot)
     register_script_handlers(bot)
+
+    # 5. Jalankan Background Memory Alert Monitor (Ambang Batas >= 90%)
+    start_alert_monitor(bot, check_interval=60)
 
     logger.info("Seluruh handler dan command bot berhasil didaftarkan.")
     return bot
