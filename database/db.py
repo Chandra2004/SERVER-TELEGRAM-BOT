@@ -148,40 +148,105 @@ def init_db():
                 if p_row:
                     cursor.execute("INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)", (r_row["id"], p_row["id"]))
 
-        # Seed Script Kesehatan Server Galaxy & Multiverse
+        # Seed Script Kesehatan Server Galaxy & Multiverse (Format Rapi & Mobile-Friendly)
+        galaxy_script = (
+            "echo '[1. PENYIMPANAN DISK]'\n"
+            "df -h / | awk 'NR==2 {printf \"  Partisi / : %s / %s (%s terpakai)\\n  Tersedia  : %s\\n\", $3, $2, $5, $4}'\n"
+            "echo ''\n"
+            "echo '[2. PENGGUNAAN MEMORI]'\n"
+            "free -m | awk 'NR==2 {printf \"  RAM       : %.1fG / %.1fG (%.0f%%)\\n  Sisa RAM  : %.1fG\\n\", $3/1024, $2/1024, ($3/$2)*100, $7/1024}'\n"
+            "free -m | awk 'NR==3 {if ($2 > 0) printf \"  Swap      : %.0fM / %.0fM (%.0f%%)\\n\", $3, $2, ($3/$2)*100; else print \"  Swap      : Nonaktif\"}'\n"
+            "echo ''\n"
+            "echo '[3. PROSESOR & UPTIME]'\n"
+            "awk '{printf \"  CPU Load  : %s, %s, %s\\n\", $1, $2, $3}' /proc/loadavg\n"
+            "uptime -p 2>/dev/null | sed 's/up /  Uptime    : /' || uptime | awk '{print \"  Uptime    : \" $3, $4}'\n"
+            "echo ''\n"
+            "echo '[4. STATUS LAYANAN]'\n"
+            "for svc in nginx php7.4-fpm redis-server; do\n"
+            "  st=$(systemctl is-active $svc 2>/dev/null || echo 'inactive')\n"
+            "  printf \"  %-12s: [%s]\\n\" \"$svc\" \"$(echo $st | tr 'a-z' 'A-Z')\"\n"
+            "done\n"
+            "echo ''\n"
+            "echo '[5. PORT LISTENING]'\n"
+            "ports=$(ss -tlpn | awk 'NR>1 {split($4, a, \":\"); print a[length(a)]}' | sort -n -u)\n"
+            "out_ports=''\n"
+            "for p in $ports; do\n"
+            "  case $p in\n"
+            "    80) desc='80/HTTP' ;;\n"
+            "    443) desc='443/HTTPS' ;;\n"
+            "    6001) desc='6001/Soketi' ;;\n"
+            "    6379) desc='6379/Redis' ;;\n"
+            "    9100) desc='9100/NodeExp' ;;\n"
+            "    9121) desc='9121/RedisExp' ;;\n"
+            "    9601) desc='9601/Metrics' ;;\n"
+            "    45683) desc='45683/SSH' ;;\n"
+            "    53) desc='53/DNS' ;;\n"
+            "    *) desc=\"$p\" ;;\n"
+            "  esac\n"
+            "  out_ports=\"${out_ports:+$out_ports, }$desc\"\n"
+            "done\n"
+            "echo \"  $out_ports\""
+        )
+
+        multiverse_script = (
+            "echo '[1. PENYIMPANAN DISK]'\n"
+            "df -h / | awk 'NR==2 {printf \"  Partisi / : %s / %s (%s terpakai)\\n  Tersedia  : %s\\n\", $3, $2, $5, $4}'\n"
+            "echo ''\n"
+            "echo '[2. PENGGUNAAN MEMORI]'\n"
+            "free -m | awk 'NR==2 {printf \"  RAM       : %.1fG / %.1fG (%.0f%%)\\n  Sisa RAM  : %.1fG\\n\", $3/1024, $2/1024, ($3/$2)*100, $7/1024}'\n"
+            "free -m | awk 'NR==3 {if ($2 > 0) printf \"  Swap      : %.0fM / %.0fM (%.0f%%)\\n\", $3, $2, ($3/$2)*100; else print \"  Swap      : Nonaktif\"}'\n"
+            "echo ''\n"
+            "echo '[3. PROSESOR & UPTIME]'\n"
+            "awk '{printf \"  CPU Load  : %s, %s, %s\\n\", $1, $2, $3}' /proc/loadavg\n"
+            "uptime -p 2>/dev/null | sed 's/up /  Uptime    : /' || uptime | awk '{print \"  Uptime    : \" $3, $4}'\n"
+            "echo ''\n"
+            "echo '[4. STATUS LAYANAN MYSQL DATABASE]'\n"
+            "st=$(systemctl is-active mysql 2>/dev/null || echo 'inactive')\n"
+            "printf \"  MySQL Daemon  : [%s]\\n\" \"$(echo $st | tr 'a-z' 'A-Z')\"\n"
+            "if command -v mysqladmin >/dev/null 2>&1; then\n"
+            "  ms=$(mysqladmin status 2>/dev/null)\n"
+            "  if [ -n \"$ms\" ]; then\n"
+            "    th=$(echo \"$ms\" | grep -o 'Threads: [0-9]*' | awk '{print $NF}')\n"
+            "    qps=$(echo \"$ms\" | grep -o 'Queries per second avg: [0-9.]*' | awk '{print $NF}')\n"
+            "    slow=$(echo \"$ms\" | grep -o 'Slow queries: [0-9]*' | awk '{print $NF}')\n"
+            "    echo \"  Threads Aktif : $th\"\n"
+            "    echo \"  Rata-rata QPS : $qps\"\n"
+            "    echo \"  Slow Queries  : $slow\"\n"
+            "  fi\n"
+            "fi\n"
+            "echo ''\n"
+            "echo '[5. PORT LISTENING]'\n"
+            "ports=$(ss -tlpn | awk 'NR>1 {split($4, a, \":\"); print a[length(a)]}' | sort -n -u)\n"
+            "out_ports=''\n"
+            "for p in $ports; do\n"
+            "  case $p in\n"
+            "    3306) desc='3306/MySQL' ;;\n"
+            "    33060) desc='33060/MySQL-X' ;;\n"
+            "    65002) desc='65002/SSH' ;;\n"
+            "    53) desc='53/DNS' ;;\n"
+            "    443) desc='443' ;;\n"
+            "    *) desc=\"$p\" ;;\n"
+            "  esac\n"
+            "  out_ports=\"${out_ports:+$out_ports, }$desc\"\n"
+            "done\n"
+            "echo \"  $out_ports\""
+        )
+
         default_scripts = [
-            ("status_galaxy", "Kesehatan Server Galaxy (Web & App)", "galaxy", (
-                "echo '=== [1. DISK & STORAGE] ==='\n"
-                "df -h /\n\n"
-                "echo '=== [2. PENGGUNAAN RAM & SWAP] ==='\n"
-                "free -h\n\n"
-                "echo '=== [3. CPU LOAD & UPTIME] ==='\n"
-                "uptime\n\n"
-                "echo '=== [4. STATUS LAYANAN UTAMA] ==='\n"
-                "for svc in nginx php7.4-fpm redis-server; do echo \"$svc: $(systemctl is-active $svc 2>/dev/null || echo 'inactive')\"; done\n\n"
-                "echo '=== [5. PORT LISTENING AKTIF] ==='\n"
-                "ss -tlpn | awk 'NR>1 {split($4, a, \":\"); print a[length(a)]}' | sort -n -u | paste -sd, -"
-            ), SUPERADMIN_ID),
-            ("status_multiverse", "Kesehatan Server Multiverse (Database)", "multiverse", (
-                "echo '=== [1. DISK & STORAGE] ==='\n"
-                "df -h /\n\n"
-                "echo '=== [2. PENGGUNAAN RAM] ==='\n"
-                "free -h\n\n"
-                "echo '=== [3. CPU LOAD & UPTIME] ==='\n"
-                "uptime\n\n"
-                "echo '=== [4. STATUS LAYANAN MYSQL DATABASE] ==='\n"
-                "echo \"mysql: $(systemctl is-active mysql 2>/dev/null || echo 'inactive')\"\n"
-                "mysqladmin status 2>/dev/null || true\n\n"
-                "echo '=== [5. PORT LISTENING AKTIF] ==='\n"
-                "ss -tlpn | awk 'NR>1 {split($4, a, \":\"); print a[length(a)]}' | sort -n -u | paste -sd, -"
-            ), SUPERADMIN_ID)
+            ("status_galaxy", "Kesehatan Server Galaxy (Web & App)", "galaxy", galaxy_script, SUPERADMIN_ID),
+            ("status_multiverse", "Kesehatan Server Multiverse (Database)", "multiverse", multiverse_script, SUPERADMIN_ID)
         ]
         # Bersihkan contoh script lama
         cursor.execute("DELETE FROM server_scripts WHERE command_name IN ('cek_disk', 'cek_ram', 'cek_db_status')")
-        cursor.executemany("""
-            INSERT OR REPLACE INTO server_scripts (command_name, title, target_server, script_content, created_by)
-            VALUES (?, ?, ?, ?, ?)
-        """, default_scripts)
+        for cmd_name, title, target, content, creator in default_scripts:
+            cursor.execute("""
+                INSERT INTO server_scripts (command_name, title, target_server, script_content, created_by)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(command_name) DO UPDATE SET
+                    title = excluded.title,
+                    target_server = excluded.target_server,
+                    script_content = excluded.script_content
+            """, (cmd_name, title, target, content, creator))
 
         # Seed SuperAdmin
         cursor.execute("SELECT id FROM users WHERE id = ?", (SUPERADMIN_ID,))
